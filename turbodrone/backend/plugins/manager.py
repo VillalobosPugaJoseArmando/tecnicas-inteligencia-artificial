@@ -127,7 +127,11 @@ class PluginManager:
         plugin_pkg_name = plugins.__name__
 
         for _, mod_name, _ in pkgutil.walk_packages(path=plugin_pkg_path, prefix=f"{plugin_pkg_name}."):
-            module = importlib.import_module(mod_name)
+            try:
+                module = importlib.import_module(mod_name)
+            except Exception as e:
+                logger.warning("[PluginManager] Saltando %s: %s", mod_name, e)
+                continue
             for _, obj in inspect.getmembers(module, inspect.isclass):
                 # Ensure it's a direct subclass of Plugin and not Plugin itself
                 if issubclass(obj, Plugin) and obj is not Plugin:

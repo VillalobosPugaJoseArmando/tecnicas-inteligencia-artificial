@@ -41,6 +41,7 @@ from protocols.x69_lg_rtsp_video_protocol import X69LgRtspVideoProtocolAdapter
 from protocols.x69_lg_jpeg_video_protocol import X69LgJpegVideoProtocolAdapter
 from protocols.x69_lg_video_mode import normalize_x69_video_mode
 from plugins.manager import PluginManager
+from plugins.aruco_monitor import ArucoMonitorPlugin
 from utils.dropping_queue import DroppingQueue
 from utils.wifi_uav_variants import (
     WIFI_UAV_DRONE_TYPES,
@@ -666,11 +667,13 @@ async def ws_endpoint(websocket: WebSocket) -> None:
             elif msg_type == "takeoff":
                 try:
                     flight_controller.model.takeoff()
+                    ArucoMonitorPlugin.notify("takeoff")
                 except Exception:
                     pass
             elif msg_type == "land":
                 try:
                     flight_controller.model.land()
+                    ArucoMonitorPlugin.notify("land")
                 except Exception:
                     pass
             elif msg_type in ("estop", "emergency_stop"):
