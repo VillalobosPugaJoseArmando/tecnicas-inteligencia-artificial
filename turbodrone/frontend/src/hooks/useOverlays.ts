@@ -2,11 +2,19 @@ import { useState, useEffect, useRef } from 'react';
 
 const OVERLAY_WS_URL = 'ws://localhost:8000/ws/overlays';
 
-export interface OverlayObject {
+export interface RectOverlay {
   type: 'rect';
   coords: [number, number, number, number]; // [x1, y1, x2, y2]
   color: string;
 }
+
+export interface TextOverlay {
+  type: 'text';
+  text: string;
+  color?: string;
+}
+
+export type OverlayObject = RectOverlay | TextOverlay;
 
 export function useOverlays() {
   const [overlays, setOverlays] = useState<OverlayObject[]>([]);

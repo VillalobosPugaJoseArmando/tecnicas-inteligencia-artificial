@@ -1,4 +1,5 @@
 import { useOverlays } from "../hooks/useOverlays";
+import type { TextOverlay } from "../hooks/useOverlays";
 import { useVideoSizing } from "../hooks/useVideoSizing";
 
 function DrawingOverlay() {
@@ -14,6 +15,8 @@ function DrawingOverlay() {
     pointerEvents: "none",
   };
 
+  const banners = overlays.filter((o): o is TextOverlay => o.type === "text");
+
   return (
     <div style={style} className="z-10">
       <svg viewBox="0 0 1 1" width="100%" height="100%" preserveAspectRatio="none">
@@ -27,12 +30,33 @@ function DrawingOverlay() {
               height={o.coords[3] - o.coords[1]}
               fill="none"
               stroke={o.color || "lime"}
-              strokeWidth={2}
+              strokeWidth={3}
               vectorEffect="non-scaling-stroke"
             />
           ) : null
         )}
       </svg>
+      {banners.map((b, i) => (
+        <div
+          key={`banner-${i}`}
+          style={{
+            position: "fixed",
+            top: 72 + i * 44,
+            zIndex: 50,
+            left: "50%",
+            transform: "translateX(-50%)",
+            padding: "6px 14px",
+            borderRadius: 8,
+            background: "rgba(0, 0, 0, 0.7)",
+            color: b.color || "white",
+            fontWeight: 700,
+            fontSize: 20,
+            whiteSpace: "nowrap",
+          }}
+        >
+          {b.text}
+        </div>
+      ))}
     </div>
   );
 }

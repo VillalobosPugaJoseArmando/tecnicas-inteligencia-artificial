@@ -33,7 +33,7 @@ export function PluginControls() {
                     await togglePlugin(name);
                     // Dispatch events so other hooks (e.g. controls) know without polling
                     const running = runningPlugins.has(name);
-                    window.dispatchEvent(new CustomEvent(running ? 'plugin:stopped' : 'plugin:running'));
+                    if (name.endsWith('MonitorPlugin') === false) window.dispatchEvent(new CustomEvent(running ? 'plugin:stopped' : 'plugin:running'));
                   }}
                   className={`px-4 py-1 rounded-full text-sm font-semibold transition-colors
                     ${isRunning
