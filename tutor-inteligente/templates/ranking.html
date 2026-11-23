@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block c %}
+<h1>Ranking de la facultad</h1>
+<table>
+<tr><th>#</th><th>Usuario</th><th>Nivel</th><th>XP</th><th>Racha</th></tr>
+{% for u in usuarios %}
+<tr{% if loop.first %} class="top"{% endif %}><td>{{ loop.index }}</td><td>{{ u.username }}</td><td>{{ u.nivel }}</td><td>{{ u.xp }}</td><td>🔥 {{ u.racha or 0 }}</td></tr>
+{% else %}
+<tr><td colspan="5">Nadie se ha registrado todavía. <a href="{{ url_for('registro') }}">Sé el primero</a>.</td></tr>
+{% endfor %}
+</table>
+{% endblock %}

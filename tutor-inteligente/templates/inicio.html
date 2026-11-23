@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block c %}
+<h1>Hola, {{ current_user.username }}</h1>
+<h2>¿Con qué materia quieres iniciar?</h2>
+{% for slug, m in materias.items() %}
+<a class="materia" href="{{ url_for('chat', slug=slug) }}">{{ m.nombre }}</a>
+{% endfor %}
+{% endblock %}

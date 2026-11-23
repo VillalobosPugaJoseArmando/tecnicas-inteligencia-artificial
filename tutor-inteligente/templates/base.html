@@ -1,0 +1,906 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tutor Inteligente</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+@view-transition{
+  navigation:auto;
+}
+
+:root{
+  --bg-deep:#10141b;
+  --bg-grid:#1a202a;
+  --slate-panel:#29323e;
+  --slate-panel-hi:#34404f;
+  --slate-border:#566577;
+  --cyan:#00e5ff;
+  --cyan-mid:#00a8c6;
+  --cyan-dark:#005f73;
+  --cyan-glow:rgba(0, 229, 255, 0.35);
+  --gold:#ffd166;
+  --text-main:#f1f5f9;
+  --text-muted:#94a3b8;
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  font-family:'Inter',system-ui,sans-serif;
+  background-color:var(--bg-deep);
+  color:var(--text-main);
+  line-height:1.55;
+  min-height:100vh;
+  position:relative;
+  overflow-x:hidden;
+}
+
+/* Barrido / destello HUD al cambiar de vista */
+.hud-transicion-overlay{
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  z-index:999;
+  opacity:0;
+  background:
+    linear-gradient(90deg, transparent 0%, rgba(0, 229, 255, 0.08) 45%, rgba(0, 229, 255, 0.24) 50%, rgba(0, 229, 255, 0.08) 55%, transparent 100%),
+    linear-gradient(180deg, rgba(10, 16, 24, 0.15) 0%, rgba(0, 229, 255, 0.12) 50%, rgba(10, 16, 24, 0.22) 100%);
+  transform:translateX(-100%);
+}
+
+body.page-leaving .hud-transicion-overlay{
+  opacity:1;
+  animation:barridoSalidaHUD .26s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes barridoSalidaHUD{
+  0%{
+    transform:translateX(-100%);
+    opacity:.35;
+  }
+  65%{
+    opacity:.95;
+  }
+  100%{
+    transform:translateX(100%);
+    opacity:.85;
+  }
+}
+
+/* Fondo fijo estilo Diva Room oscuro */
+.diva-bg{
+  position:fixed;
+  inset:0;
+  width:100%;
+  height:100%;
+  pointer-events:none;
+  z-index:-1;
+  object-fit:cover;
+}
+
+/* Solo gira la forma/máscara del disco; las líneas interiores permanecen horizontales */
+.disco-rotador-grande{
+  transform-box:view-box;
+  transform-origin:1290px 275px;
+  animation:girarDiscoFondo 28s linear infinite;
+}
+
+.disco-contrarotar-grande{
+  transform-box:view-box;
+  transform-origin:1290px 275px;
+  animation:contrarotarDiscoFondo 28s linear infinite;
+}
+
+.disco-rotador-chico{
+  transform-box:view-box;
+  transform-origin:430px 235px;
+  animation:girarDiscoFondoAnti 20s linear infinite;
+}
+
+.disco-contrarotar-chico{
+  transform-box:view-box;
+  transform-origin:430px 235px;
+  animation:contrarotarDiscoFondoAnti 20s linear infinite;
+}
+
+@keyframes girarDiscoFondo{
+  0%{transform:rotate(0deg)}
+  100%{transform:rotate(360deg)}
+}
+
+@keyframes contrarotarDiscoFondo{
+  0%{transform:rotate(0deg)}
+  100%{transform:rotate(-360deg)}
+}
+
+@keyframes girarDiscoFondoAnti{
+  0%{transform:rotate(0deg)}
+  100%{transform:rotate(-360deg)}
+}
+
+@keyframes contrarotarDiscoFondoAnti{
+  0%{transform:rotate(0deg)}
+  100%{transform:rotate(360deg)}
+}
+
+/* Barras estilo ecualizador dentro del cuadro modular */
+.eq-bar{
+  transform-box:fill-box;
+  transform-origin:bottom center;
+  animation:barraEcualizador 1.6s ease-in-out infinite alternate;
+}
+
+.eq-b1{animation-duration:1.35s;animation-delay:-.1s}
+.eq-b2{animation-duration:1.8s;animation-delay:-.45s}
+.eq-b3{animation-duration:1.15s;animation-delay:-.8s}
+.eq-b4{animation-duration:1.95s;animation-delay:-.25s}
+.eq-b5{animation-duration:1.45s;animation-delay:-.65s}
+.eq-b6{animation-duration:1.7s;animation-delay:-1.05s}
+.eq-b7{animation-duration:1.25s;animation-delay:-.35s}
+.eq-b8{animation-duration:2.05s;animation-delay:-.9s}
+.eq-b9{animation-duration:1.5s;animation-delay:-.55s}
+.eq-b10{animation-duration:1.3s;animation-delay:-.15s}
+.eq-b11{animation-duration:1.85s;animation-delay:-.75s}
+.eq-b12{animation-duration:1.4s;animation-delay:-.4s}
+
+@keyframes barraEcualizador{
+  0%{
+    transform:scaleY(0.18);
+    opacity:.35;
+  }
+  50%{
+    transform:scaleY(0.68);
+    opacity:.62;
+  }
+  100%{
+    transform:scaleY(1);
+    opacity:.85;
+  }
+}
+
+/* Disco liso en esquina inferior izquierda: gira y se hace/deshace en ciclo */
+.disco-esquina-wrap{
+  position:fixed;
+  left:-54px;
+  bottom:-54px;
+  width:210px;
+  height:210px;
+  pointer-events:none;
+  z-index:-1;
+  filter:drop-shadow(0 0 14px rgba(0, 229, 255, 0.28));
+}
+
+.disco-esquina-svg{
+  width:100%;
+  height:100%;
+  animation:girarDisco 10s linear infinite;
+  transform-origin:50% 50%;
+}
+
+.disco-anillo-ciclo{
+  stroke-dasharray:440;
+  stroke-dashoffset:440;
+  animation:hacerYDeshacerDisco 5.5s ease-in-out infinite;
+}
+
+.disco-anillo-interno{
+  stroke-dasharray:250;
+  stroke-dashoffset:0;
+  animation:hacerYDeshacerInterno 5.5s ease-in-out infinite;
+}
+
+@keyframes girarDisco{
+  0%{transform:rotate(0deg)}
+  100%{transform:rotate(360deg)}
+}
+
+@keyframes hacerYDeshacerDisco{
+  0%{
+    stroke-dashoffset:440;
+    opacity:.35;
+  }
+  45%{
+    stroke-dashoffset:0;
+    opacity:.95;
+  }
+  55%{
+    stroke-dashoffset:0;
+    opacity:.95;
+  }
+  100%{
+    stroke-dashoffset:440;
+    opacity:.35;
+  }
+}
+
+@keyframes hacerYDeshacerInterno{
+  0%{
+    stroke-dashoffset:250;
+    opacity:.25;
+  }
+  50%{
+    stroke-dashoffset:20;
+    opacity:.85;
+  }
+  100%{
+    stroke-dashoffset:250;
+    opacity:.25;
+  }
+}
+
+h1,h2{
+  font-family:'Chakra Petch',sans-serif;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+  margin:.2rem 0 1.1rem;
+  color:#fff;
+  text-shadow:0 0 12px rgba(0, 229, 255, 0.3);
+}
+
+h2{
+  font-size:1.35rem;
+  border-left:4px solid var(--cyan);
+  padding-left:.75rem;
+}
+
+/* Barra superior estilo HUD */
+nav{
+  display:flex;
+  flex-wrap:wrap;
+  gap:1.1rem;
+  align-items:center;
+  padding:.85rem 1.5rem;
+  background:rgba(15, 19, 26, 0.92);
+  backdrop-filter:blur(8px);
+  border-bottom:2px solid var(--cyan-mid);
+  box-shadow:0 4px 20px rgba(0, 0, 0, 0.5), 0 1px 12px var(--cyan-glow);
+  position:sticky;
+  top:0;
+  z-index:20;
+}
+
+nav b{
+  font-family:'Chakra Petch',sans-serif;
+  font-size:1.25rem;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  margin-right:auto;
+  color:#fff;
+  text-shadow:0 0 10px var(--cyan-glow);
+}
+
+nav b::before{
+  content:"◈ ";
+  color:var(--cyan);
+}
+
+nav a{
+  color:var(--text-main);
+  text-decoration:none;
+  font-family:'Chakra Petch',sans-serif;
+  font-weight:600;
+  font-size:.95rem;
+  letter-spacing:.04em;
+  padding:.3rem .65rem;
+  border:1px solid transparent;
+  border-radius:4px;
+  transition:all .18s ease;
+}
+
+nav a:hover{
+  color:var(--cyan);
+  border-color:var(--cyan-mid);
+  background:rgba(0, 229, 255, 0.08);
+  box-shadow:0 0 10px var(--cyan-glow);
+}
+
+nav span{
+  font-family:'Chakra Petch',sans-serif;
+  font-weight:700;
+  background:rgba(41, 50, 62, 0.8);
+  border:1px solid var(--slate-border);
+  padding:.25rem .65rem;
+  border-radius:4px;
+  font-size:.92rem;
+}
+
+a{color:var(--cyan)}
+
+/* Contenedor principal con espacio abajo para la barra fija */
+main{
+  max-width:680px;
+  margin:2rem auto;
+  padding:0 1rem 7.5rem;
+  animation:entradaHUD .32s ease-out both;
+}
+
+body.page-leaving main{
+  animation:salidaHUD .18s ease-in forwards;
+}
+
+@keyframes entradaHUD{
+  0%{opacity:0}
+  100%{opacity:1}
+}
+
+@keyframes salidaHUD{
+  0%{opacity:1}
+  100%{opacity:0}
+}
+
+/* Inputs y botones futuristas */
+input,button{
+  font:inherit;
+  width:100%;
+  padding:.78rem 1rem;
+  margin:.35rem 0;
+  border-radius:6px;
+  transition:all .18s ease;
+}
+
+input{
+  background:rgba(24, 30, 39, 0.9);
+  color:#fff;
+  border:1.5px solid var(--slate-border);
+}
+
+input::placeholder{
+  color:var(--text-muted);
+}
+
+input:focus{
+  outline:none;
+  border-color:var(--cyan);
+  box-shadow:0 0 12px var(--cyan-glow);
+  background:#1c232e;
+}
+
+button{
+  font-family:'Chakra Petch',sans-serif;
+  font-weight:700;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+  background:linear-gradient(135deg, var(--cyan-mid), var(--cyan-dark));
+  color:#fff;
+  border:1.5px solid var(--cyan);
+  box-shadow:0 0 12px rgba(0, 229, 255, 0.25);
+  cursor:pointer;
+  text-align:center;
+}
+
+button:hover,button:focus-visible{
+  background:linear-gradient(135deg, var(--cyan), var(--cyan-mid));
+  color:#081219;
+  box-shadow:0 0 18px var(--cyan-glow);
+  transform:translateY(-1px);
+}
+
+/* Tablas (Ranking) */
+table{
+  width:100%;
+  border-collapse:separate;
+  border-spacing:0 6px;
+}
+
+th{
+  font-family:'Chakra Petch',sans-serif;
+  text-transform:uppercase;
+  font-size:.85rem;
+  letter-spacing:.06em;
+  color:var(--cyan);
+  padding:.6rem .75rem;
+  text-align:left;
+  border-bottom:1px solid var(--cyan-mid);
+}
+
+td{
+  padding:.75rem;
+  text-align:left;
+  background:var(--slate-panel);
+  border-top:1px solid var(--slate-border);
+  border-bottom:1px solid var(--slate-border);
+}
+
+td:first-child{
+  border-left:1px solid var(--slate-border);
+  border-radius:6px 0 0 6px;
+  font-family:'Chakra Petch',sans-serif;
+  font-weight:700;
+}
+
+td:last-child{
+  border-right:1px solid var(--slate-border);
+  border-radius:0 6px 6px 0;
+}
+
+tr.top td{
+  font-weight:700;
+  background:linear-gradient(90deg, rgba(0, 168, 198, 0.35), rgba(41, 50, 62, 0.95));
+  border-color:var(--cyan);
+  color:#fff;
+  box-shadow:0 0 12px rgba(0, 229, 255, 0.15);
+}
+
+tr.top td:first-child{
+  color:var(--gold);
+}
+
+.aviso{
+  color:var(--gold);
+  background:rgba(255, 209, 102, 0.1);
+  border:1px solid rgba(255, 209, 102, 0.4);
+  padding:.6rem .9rem;
+  border-radius:6px;
+}
+
+/* Tarjetas de Materias */
+.materia{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:1rem 1.25rem;
+  margin:.65rem 0;
+  background:linear-gradient(180deg, var(--slate-panel-hi) 0%, var(--slate-panel) 100%);
+  border:1.5px solid var(--slate-border);
+  border-radius:8px;
+  clip-path:polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  text-decoration:none;
+  color:#fff;
+  font-family:'Chakra Petch',sans-serif;
+  font-weight:600;
+  font-size:1.2rem;
+  letter-spacing:.03em;
+  transition:all .2s ease;
+}
+
+.materia::after{
+  content:"▶";
+  font-size:.85rem;
+  color:var(--text-muted);
+  transition:transform .2s ease, color .2s ease;
+}
+
+.materia:hover{
+  background:
+    repeating-linear-gradient(-45deg, rgba(255,255,255,0.08) 0 6px, transparent 6px 12px),
+    linear-gradient(90deg, #00b4d8 0%, #007799 100%);
+  border-color:var(--cyan);
+  box-shadow:0 0 16px var(--cyan-glow);
+  transform:translateX(4px);
+}
+
+.materia:hover::after{
+  color:#fff;
+  transform:translateX(3px);
+}
+
+/* Área de Chat */
+#log{
+  min-height:42vh;
+  padding:.9rem 1.1rem;
+  background:rgba(13, 17, 23, 0.62);
+  backdrop-filter:blur(4px);
+  border:1px solid rgba(86, 101, 119, 0.45);
+  border-radius:10px;
+}
+
+/* Globos adaptables al texto en paralelogramo real */
+.msg{
+  position:relative;
+  padding:.85rem 1.65rem;
+  margin:.75rem 0;
+  max-width:90%;
+  width:fit-content;
+  font-size:.97rem;
+  filter:drop-shadow(0 4px 10px rgba(0, 0, 0, 0.35));
+}
+
+.msg-txt{
+  display:block;
+  white-space:pre-wrap;
+  word-break:break-word;
+}
+
+/* IA: paralelogramo gris (/ ... /) con franja superior igual que el del usuario */
+.bot{
+  margin-right:auto;
+  color:#f8fafc;
+  background:
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.14) 0 7px, transparent 7px 14px),
+    linear-gradient(180deg, #5c636d 0%, #464c54 100%);
+  background-size:100% 10px, 100% 100%;
+  background-repeat:no-repeat, no-repeat;
+  background-position:0 0, 0 0;
+  background-color:#4f5660;
+  clip-path:polygon(16px 0, 100% 0, calc(100% - 16px) 100%, 0 100%);
+}
+
+/* Animación de la franja superior únicamente cuando la IA está pensando */
+.bot.pensando{
+  animation:franjasPensando .9s linear infinite;
+}
+
+@keyframes franjasPensando{
+  0%{
+    background-position:0 0, 0 0;
+  }
+  100%{
+    background-position:40px 0, 0 0;
+  }
+}
+
+/* Usuario: espejo en cian (\ ... \) */
+.yo{
+  margin-left:auto;
+  color:#041c24;
+  font-weight:600;
+  background:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.16) 0 7px, transparent 7px 14px),
+    linear-gradient(135deg, #18f2ff 0%, #00c4de 100%);
+  background-size:100% 10px, 100% 100%;
+  background-repeat:no-repeat;
+  background-color:#00d8f0;
+  clip-path:polygon(0 0, calc(100% - 16px) 0, 100% 100%, 16px 100%);
+  filter:drop-shadow(0 0 10px var(--cyan-glow));
+}
+
+/* Animación 1: mensaje enviado desde sugerencia */
+.yo.anim-sugerencia{
+  animation:popSugerencia .36s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes popSugerencia{
+  0%{
+    opacity:0;
+    transform:translateX(24px) scale(0.94);
+    filter:drop-shadow(0 0 22px var(--cyan));
+  }
+  65%{
+    opacity:1;
+    transform:translateX(-4px) scale(1.02);
+    filter:drop-shadow(0 0 16px var(--cyan));
+  }
+  100%{
+    opacity:1;
+    transform:translateX(0) scale(1);
+    filter:drop-shadow(0 0 10px var(--cyan-glow));
+  }
+}
+
+/* Animación 2: mensaje escrito a mano con Enter o botón Enviar */
+.yo.anim-manual{
+  animation:disparoManual .34s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes disparoManual{
+  0%{
+    opacity:0;
+    transform:translateY(14px) translateX(10px);
+    filter:brightness(1.5) drop-shadow(0 0 16px var(--cyan));
+  }
+  70%{
+    opacity:1;
+    transform:translateY(-2px) translateX(0);
+    filter:brightness(1.15) drop-shadow(0 0 12px var(--cyan-glow));
+  }
+  100%{
+    opacity:1;
+    transform:translateY(0) translateX(0);
+    filter:brightness(1) drop-shadow(0 0 10px var(--cyan-glow));
+  }
+}
+
+/* Pulso del chip de sugerencia al seleccionarlo */
+.chip.chip-elegido{
+  animation:chipPulso .26s ease forwards;
+  background:var(--cyan);
+  color:#061318;
+  border-color:#fff;
+  box-shadow:0 0 20px var(--cyan);
+}
+
+@keyframes chipPulso{
+  0%{transform:scale(1)}
+  50%{transform:scale(1.07)}
+  100%{transform:scale(0.96);opacity:.65}
+}
+
+/* Flash del formulario al enviar mensaje escrito */
+#f.form-enviado input,
+#f.form-enviado button{
+  animation:flashEnvio .28s ease;
+}
+
+@keyframes flashEnvio{
+  0%{box-shadow:0 0 22px var(--cyan)}
+  100%{box-shadow:0 0 12px rgba(0, 229, 255, 0.25)}
+}
+
+.ganaste{
+  font-family:'Chakra Petch',sans-serif;
+  color:var(--cyan);
+  background:rgba(0, 229, 255, 0.1);
+  border:1px solid var(--cyan);
+  padding:.4rem .8rem;
+  border-radius:6px;
+  display:inline-block;
+  font-weight:700;
+  margin:.5rem 0;
+  box-shadow:0 0 10px var(--cyan-glow);
+}
+
+.err{
+  color:#ff8585;
+  border-color:#ff4d4d;
+}
+
+/* Sugerencias */
+#sug{
+  margin-top:.85rem;
+}
+
+.chip{
+  width:auto;
+  display:inline-block;
+  font-family:'Inter',sans-serif;
+  font-weight:500;
+  text-transform:none;
+  letter-spacing:normal;
+  font-size:.88rem;
+  background:rgba(41, 50, 62, 0.65);
+  backdrop-filter:blur(4px);
+  color:#e2e8f0;
+  border:1.5px solid rgba(0, 229, 255, 0.55);
+  box-shadow:0 0 8px rgba(0, 229, 255, 0.15);
+  border-radius:6px;
+  padding:.48rem .9rem;
+  margin:0 .45rem .45rem 0;
+  text-align:left;
+}
+
+.chip:hover{
+  background:rgba(0, 229, 255, 0.2);
+  border-color:var(--cyan);
+  color:#fff;
+  box-shadow:0 0 14px var(--cyan-glow);
+}
+
+/* Barra inferior fija donde el usuario escribe su pregunta */
+#f{
+  position:fixed;
+  left:50%;
+  bottom:0;
+  transform:translateX(-50%);
+  width:calc(100% - 2rem);
+  max-width:680px;
+  display:flex;
+  gap:.6rem;
+  margin:0;
+  padding:.75rem 1rem calc(.75rem + env(safe-area-inset-bottom));
+  background:rgba(15, 19, 26, 0.94);
+  backdrop-filter:blur(8px);
+  border:1.5px solid var(--cyan-mid);
+  border-bottom:none;
+  border-radius:10px 10px 0 0;
+  box-shadow:0 -4px 20px rgba(0, 0, 0, 0.6), 0 -1px 12px var(--cyan-glow);
+  z-index:20;
+}
+
+#f input{flex:1;margin:0}
+#f button{width:auto;padding:.78rem 1.4rem;margin:0}
+</style>
+</head>
+<body>
+
+<div class="hud-transicion-overlay" aria-hidden="true"></div>
+
+<!-- Réplica oscura del fondo "Diva Room" con discos incompletos y patrón de líneas -->
+<svg class="diva-bg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+  <defs>
+    <linearGradient id="wallGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#18202c"/>
+      <stop offset="50%" stop-color="#121822"/>
+      <stop offset="100%" stop-color="#0d1118"/>
+    </linearGradient>
+
+    <linearGradient id="rightWallGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1d2736"/>
+      <stop offset="100%" stop-color="#10151e"/>
+    </linearGradient>
+
+    <linearGradient id="floorGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#161f2b"/>
+      <stop offset="45%" stop-color="#10161f"/>
+      <stop offset="100%" stop-color="#090c11"/>
+    </linearGradient>
+
+    <radialGradient id="cyanGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#00e5ff" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#00e5ff" stop-opacity="0"/>
+    </radialGradient>
+
+    <pattern id="brushedLines" width="8" height="8" patternUnits="userSpaceOnUse">
+      <line x1="0" y1="0" x2="8" y2="0" stroke="#ffffff" stroke-opacity="0.025" stroke-width="1"/>
+    </pattern>
+
+    <!-- Patrón de líneas horizontales fijas -->
+    <pattern id="discStripes" width="12" height="10" patternUnits="userSpaceOnUse">
+      <line x1="0" y1="3" x2="12" y2="3" stroke="#00e5ff" stroke-opacity="0.22" stroke-width="2.5"/>
+    </pattern>
+
+    <!-- Máscara de anillo incompleto para disco de líneas grande -->
+    <mask id="discoLineasMask">
+      <rect width="1600" height="900" fill="black"/>
+      <g class="disco-rotador-grande">
+        <circle cx="1290" cy="275" r="245" fill="none" stroke="white" stroke-width="135" stroke-dasharray="920 260 410 180"/>
+        <circle cx="1290" cy="275" r="95" fill="black"/>
+      </g>
+    </mask>
+
+    <!-- Máscara secundaria de disco pequeño de líneas -->
+    <mask id="discoLineasChicoMask">
+      <rect width="1600" height="900" fill="black"/>
+      <g class="disco-rotador-chico">
+        <circle cx="430" cy="235" r="115" fill="none" stroke="white" stroke-width="58" stroke-dasharray="320 110 180 90"/>
+        <circle cx="430" cy="235" r="56" fill="black"/>
+      </g>
+    </mask>
+  </defs>
+
+  <!-- Base de la habitación -->
+  <rect width="1600" height="900" fill="url(#wallGrad)"/>
+  <rect width="1600" height="900" fill="url(#brushedLines)"/>
+
+  <!-- Luz ambiental cian -->
+  <ellipse cx="420" cy="360" rx="440" ry="260" fill="url(#cyanGlow)"/>
+  <ellipse cx="1280" cy="340" rx="380" ry="280" fill="url(#cyanGlow)"/>
+
+  <!-- Disco grande de líneas: gira la máscara, pero las líneas se mantienen horizontales -->
+  <g>
+    <g mask="url(#discoLineasMask)">
+      <rect x="980" y="0" width="620" height="580" fill="url(#discStripes)"/>
+    </g>
+    <g class="disco-rotador-grande">
+      <path d="M 1110 115 A 245 245 0 0 1 1485 160" fill="none" stroke="#00e5ff" stroke-opacity="0.32" stroke-width="3" stroke-dasharray="60 22 110 28"/>
+      <path d="M 1185 395 A 165 165 0 0 0 1455 340" fill="none" stroke="#00e5ff" stroke-opacity="0.24" stroke-width="2" stroke-dasharray="36 16"/>
+    </g>
+  </g>
+
+  <!-- Disco chico de líneas: gira la máscara, pero las líneas se mantienen horizontales -->
+  <g mask="url(#discoLineasChicoMask)" opacity="0.65">
+    <rect x="280" y="90" width="300" height="300" fill="url(#discStripes)"/>
+  </g>
+
+  <!-- División de paneles de pared -->
+  <line x1="250" y1="0" x2="250" y2="620" stroke="#2c3a4e" stroke-width="2"/>
+  <line x1="720" y1="0" x2="720" y2="620" stroke="#2c3a4e" stroke-width="2"/>
+  <line x1="1120" y1="0" x2="1120" y2="620" stroke="#2c3a4e" stroke-width="2"/>
+  <line x1="0" y1="145" x2="1600" y2="145" stroke="#263345" stroke-width="1.5"/>
+
+  <!-- Detalles de circuito / nodos en el panel izquierdo -->
+  <g stroke="#00e5ff" stroke-opacity="0.24" fill="none" stroke-width="2">
+    <polyline points="40,180 145,180 195,230 195,390"/>
+    <polyline points="85,240 160,240 160,330"/>
+    <circle cx="195" cy="390" r="7" fill="#00e5ff" fill-opacity="0.22"/>
+    <circle cx="160" cy="330" r="5" fill="#00e5ff" fill-opacity="0.18"/>
+    <circle cx="115" cy="430" r="32" stroke-width="2.5"/>
+    <circle cx="115" cy="430" r="16" stroke-dasharray="8 6"/>
+  </g>
+
+  <!-- Estructura modular derecha en tono oscuro con líneas tipo ecualizador -->
+  <g opacity="0.72">
+    <polygon points="1260,360 1560,335 1560,620 1260,620" fill="url(#rightWallGrad)" stroke="#2b3a4f" stroke-width="2"/>
+    <polyline points="1285,385 1535,365 1535,610" fill="none" stroke="#00e5ff" stroke-opacity="0.28" stroke-width="2.5"/>
+
+    <!-- Líneas verticales animadas arriba y abajo (estilo ecualizador) -->
+    <g fill="#00e5ff">
+      <rect class="eq-bar eq-b1" x="1302" y="455" width="7" height="145" rx="2"/>
+      <rect class="eq-bar eq-b2" x="1320" y="430" width="7" height="170" rx="2"/>
+      <rect class="eq-bar eq-b3" x="1338" y="470" width="7" height="130" rx="2"/>
+      <rect class="eq-bar eq-b4" x="1356" y="415" width="7" height="185" rx="2"/>
+      <rect class="eq-bar eq-b5" x="1374" y="445" width="7" height="155" rx="2"/>
+      <rect class="eq-bar eq-b6" x="1392" y="425" width="7" height="175" rx="2"/>
+      <rect class="eq-bar eq-b7" x="1410" y="465" width="7" height="135" rx="2"/>
+      <rect class="eq-bar eq-b8" x="1428" y="410" width="7" height="190" rx="2"/>
+      <rect class="eq-bar eq-b9" x="1446" y="450" width="7" height="150" rx="2"/>
+      <rect class="eq-bar eq-b10" x="1464" y="475" width="7" height="125" rx="2"/>
+      <rect class="eq-bar eq-b11" x="1482" y="435" width="7" height="165" rx="2"/>
+      <rect class="eq-bar eq-b12" x="1500" y="460" width="7" height="140" rx="2"/>
+    </g>
+  </g>
+
+  <!-- Línea de horizonte entre pared y piso -->
+  <line x1="0" y1="620" x2="1600" y2="620" stroke="#00e5ff" stroke-opacity="0.35" stroke-width="2"/>
+
+  <!-- Piso en perspectiva -->
+  <polygon points="0,620 1600,620 1600,900 0,900" fill="url(#floorGrad)"/>
+  <g stroke="#00e5ff" stroke-opacity="0.11" stroke-width="1.5">
+    <line x1="800" y1="620" x2="-350" y2="900"/>
+    <line x1="800" y1="620" x2="220" y2="900"/>
+    <line x1="800" y1="620" x2="620" y2="900"/>
+    <line x1="800" y1="620" x2="980" y2="900"/>
+    <line x1="800" y1="620" x2="1380" y2="900"/>
+    <line x1="800" y1="620" x2="1950" y2="900"/>
+    <line x1="0" y1="690" x2="1600" y2="690"/>
+    <line x1="0" y1="785" x2="1600" y2="785"/>
+  </g>
+</svg>
+
+<!-- Disco liso en la esquina inferior izquierda que gira y se hace/deshace -->
+<div class="disco-esquina-wrap" aria-hidden="true">
+  <svg class="disco-esquina-svg" viewBox="0 0 200 200">
+    <!-- Base lisa oscura -->
+    <circle cx="100" cy="100" r="84" fill="rgba(16, 23, 33, 0.72)" stroke="rgba(0, 229, 255, 0.18)" stroke-width="2"/>
+    <circle cx="100" cy="100" r="46" fill="rgba(11, 16, 24, 0.85)" stroke="rgba(0, 229, 255, 0.25)" stroke-width="1.5"/>
+
+    <!-- Anillo liso exterior que se completa y se deshace -->
+    <circle class="disco-anillo-ciclo" cx="100" cy="100" r="70" fill="none" stroke="#00e5ff" stroke-width="9" stroke-linecap="round"/>
+
+    <!-- Anillo liso interior que se hace y se deshace -->
+    <circle class="disco-anillo-interno" cx="100" cy="100" r="40" fill="none" stroke="#00b4d8" stroke-width="4.5" stroke-linecap="round"/>
+
+    <!-- Centro liso -->
+    <circle cx="100" cy="100" r="14" fill="rgba(0, 229, 255, 0.22)" stroke="#00e5ff" stroke-width="1.5"/>
+  </svg>
+</div>
+
+<nav>
+<b>Tutor Inteligente</b>
+{% if current_user.is_authenticated %}
+<a href="{{ url_for('inicio') }}">Materias</a>
+<a href="{{ url_for('ranking') }}">Ranking</a>
+<span title="XP">⭐ <span id="xp">{{ current_user.xp }}</span></span>
+<span title="Racha">🔥 <span id="racha">{{ current_user.racha or 0 }}</span></span>
+<a href="{{ url_for('salir') }}">Salir</a>
+{% else %}
+<a href="{{ url_for('ranking') }}">Ranking</a>
+<a href="{{ url_for('entrar') }}">Entrar</a>
+{% endif %}
+</nav>
+<main>
+{% for m in get_flashed_messages() %}<p class="aviso">{{ m }}</p>{% endfor %}
+{% block c %}{% endblock %}
+</main>
+
+<script>
+(() => {
+  let navegando = false;
+
+  document.addEventListener("click", (e) => {
+    if (navegando || e.defaultPrevented) return;
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+
+    const link = e.target.closest("a[href]");
+    if (!link) return;
+
+    const href = link.getAttribute("href");
+    if (!href || href.startsWith("#") || href.startsWith("javascript:") || link.target === "_blank" || link.hasAttribute("download")) {
+      return;
+    }
+
+    const destino = new URL(link.href, window.location.href);
+    if (destino.origin !== window.location.origin) return;
+    if (destino.href === window.location.href) return;
+
+    e.preventDefault();
+    navegando = true;
+    document.body.classList.add("page-leaving");
+
+    window.setTimeout(() => {
+      window.location.href = destino.href;
+    }, 200);
+  });
+
+  window.addEventListener("pageshow", () => {
+    navegando = false;
+    document.body.classList.remove("page-leaving");
+  });
+})();
+</script>
+</body>
+</html>

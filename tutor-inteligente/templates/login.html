@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block c %}
+<h2>{{ "Crear cuenta" if registro else "Entrar" }}</h2>
+<form method="post">
+<input name="username" placeholder="Usuario" required autocomplete="username">
+<input name="password" type="password" placeholder="Contraseña" required autocomplete="{{ 'new-password' if registro else 'current-password' }}">
+<button>{{ "Crear cuenta" if registro else "Entrar" }}</button>
+</form>
+<p>
+{% if registro %}¿Ya tienes cuenta? <a href="{{ url_for('entrar') }}">Entrar</a>
+{% else %}¿Primera vez? <a href="{{ url_for('registro') }}">Crear cuenta</a>{% endif %}
+</p>
+{% endblock %}

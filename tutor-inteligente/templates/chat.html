@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block c %}
+<h2>{{ nombre }}</h2>
+<div id="log" aria-live="polite">
+<div class="msg bot"><span class="msg-txt">Dime cómo quieres iniciar. Puedes preguntarme lo que quieras o elegir una sugerencia.</span></div>
+</div>
+<div id="sug">
+{% for s in sugerencias %}<button type="button" class="chip">{{ s }}</button>{% endfor %}
+</div>
+<form id="f">
+<input id="t" placeholder="Escribe tu pregunta" autocomplete="off" required>
+<button>Enviar</button>
+</form>
+<script>
+const SLUG = {{ slug|tojson }};
+const hist = [];
+const log = document.getElementById('log'), f = document.getElementById('f'),
+      t = document.getElementById('t'), sug = document.getElementById('sug');
+
+function add(clase, texto, animClase) {
+  const d = document.createElement('div');
+  if (clase === 'ganaste') {
+    d.className = 'ganaste';
+    d.textContent = texto;
+  } else {
+    d.className = 'msg ' + clase + (animClase ? ' ' + animClase : '');
+    const span = document.createElement('span');
+    span.className = 'msg-txt';
+    span.textContent = texto;
+    d.appendChild(span);
+  }
+  log.appendChild(d);
+  d.scrollIntoView({block: 'end'});
+  return d;
+}
+
+function setBotTexto(nodo, texto) {
+  nodo.classList.remove('pensando');
+  const span = nodo.querySelector('.msg-txt');
+  if (span) span.textContent = texto;
+  else nodo.textContent = texto;
+}
+
+async function enviar(texto, origen = 'manual') {
+  sug.hidden = true;
+  const animYo = origen === 'sugerencia' ? 'anim-sugerencia' : 'anim-manual';
+  add('yo', texto, animYo);
+  hist.push({role: 'user', content: texto});
+  const espera = add('bot', 'Pensando...', 'pensando');
+  t.disabled = true;
+  try {
+    const r = await fetch('/api/chat/' + SLUG, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({mensajes: hist})
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok || !d.respuesta) throw new Error(d.error || 'Tu sesión expiró, vuelve a entrar.');
+    setBotTexto(espera, d.respuesta);
+    hist.push({role: 'assistant', content: d.respuesta});
+    if (d.gano) add('ganaste', '+10 XP, sigue así.');
+    document.getElementById('xp').textContent = d.xp;
+    document.getElementById('racha').textContent = d.racha;
+  } catch (e) {
+    setBotTexto(espera, e.message);
+    espera.classList.add('err');
+    hist.pop();
+  }
+  t.disabled = false;
+  t.focus();
+}
+
+f.onsubmit = e => {
+  e.preventDefault();
+  const v = t.value.trim();
+  if (v) {
+    t.value = '';
+    f.classList.remove('form-enviado');
+    void f.offsetWidth;
+    f.classList.add('form-enviado');
+    enviar(v, 'manual');
+  }
+};
+
+sug.onclick = e => {
+  const chip = e.target.closest('.chip');
+  if (!chip) return;
+  const texto = chip.textContent;
+  chip.classList.add('chip-elegido');
+  setTimeout(() => enviar(texto, 'sugerencia'), 140);
+};
+</script>
+{% endblock %}
